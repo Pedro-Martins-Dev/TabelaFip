@@ -15,13 +15,14 @@ public class TabelaFipeApplication implements CommandLineRunner
 	}
 
 	@Override
-	public void run(String... args) throws Exception
+	public void run(String... args)
 	{
 		Main main = new Main();
 
 			Map<String, String> veiculoEscolhido = main.exibeMenu();
 			Map<String, String> marcaEscolhida = main.escolherMarca(veiculoEscolhido);
 		Map<String, String> modeloEscolhido = main.escolherModelo(marcaEscolhida);
+
 	}
 
 

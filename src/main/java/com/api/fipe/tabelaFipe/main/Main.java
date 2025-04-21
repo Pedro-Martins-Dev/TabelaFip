@@ -1,14 +1,12 @@
 package com.api.fipe.tabelaFipe.main;
 
 import com.api.fipe.tabelaFipe.model.Dados;
+import com.api.fipe.tabelaFipe.model.InformacoesVaiculos;
 import com.api.fipe.tabelaFipe.model.Modelos;
 import com.api.fipe.tabelaFipe.service.ConsumoApi;
 import com.api.fipe.tabelaFipe.service.ConverteDados;
 
-import java.util.Comparator;
-import java.util.Scanner;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 public class Main
 {
@@ -67,8 +65,8 @@ public class Main
         var marcas = CONVERSOR.obterLista(json, Dados.class);
 
         marcas.stream()
-                .sorted(Comparator.comparing(Dados::nomeMarca))
-                .forEach(m -> System.out.println(m.nomeMarca() + ": " + m.codigo()));
+                .sorted(Comparator.comparing(Dados::nome))
+                .forEach(m -> System.out.println(m.nome() + ": " + m.codigo()));
 
         try
         {
@@ -98,22 +96,46 @@ public class Main
 
         var modeloLista = CONVERSOR.converteDados(json, Modelos.class);
 
-        System.out.println("Modelos da marca: ");
-
-        modeloLista.modelos().stream()
-                .sorted(Comparator.comparing(Dados::nomeMarca))
-                .forEach(m -> System.out.println("Nome do modelo: " + m.nomeMarca() + " Código: " + m.codigo()));
-
         try
         {
-            System.out.println("\nDigite o código do modelo que você deseja: ");
-            modeloEscolhido = scanner.nextInt();
-            scanner.nextLine();
+            System.out.println("Insira o nome do modelo que você deseja pesquisar: ");
+            String nomeModelo = scanner.nextLine();
 
-            String novoEndereco = enderecoEjson.keySet().iterator().next() + "/" + modeloEscolhido + "/anos";
-            String jsonModelo = consumoApi.obterDados(novoEndereco);
+            List<Dados> modelosFiltrados = modeloLista.modelos().stream()
+                    .filter(m -> m.nome().toUpperCase().contains(nomeModelo.toUpperCase()))
+                    .toList();
+
+            System.out.println("Modelos filtrados: ");
+            modelosFiltrados.forEach(m -> System.out.println("Nome do modelo: " + m.nome() + " Código: " + m.codigo()));
+
+            System.out.println("\nDigite o código do modelo que você deseja visualizar os anos existentes: ");
+            var codigoModelo = scanner.nextLine();
+
+            String novoEndereco = enderecoEjson.keySet().iterator().next() + "/" + codigoModelo + "/anos";
+
+            json = consumoApi.obterDados(novoEndereco);
             enderecoEjson.clear();
-            enderecoEjson.put(novoEndereco, jsonModelo);
+            enderecoEjson.put(novoEndereco, json);
+            List<Dados> listagemAnos= CONVERSOR.obterLista(json, Dados.class);
+
+            List<InformacoesVaiculos> informacoesVeiculos = new ArrayList<>();
+
+            for(int i = 0; i < listagemAnos.size(); i++)
+            {
+                var enderecoAnos = novoEndereco + "/" + listagemAnos.get(i).codigo();
+
+                json = consumoApi.obterDados(enderecoAnos);
+                var informacoes = CONVERSOR.converteDados(json, InformacoesVaiculos.class);
+
+                informacoesVeiculos.add(informacoes);
+            }
+
+            System.out.println("\nInformações dos veículos: ");
+            informacoesVeiculos.forEach(i -> System.out.println("\nValor: " + i.valor() +
+                    "\nMarca: " + i.marca() +
+                    "\nModelo: " + i.modelo() +
+                    "\nAno: " + i.ano() +
+                    "\nCombustível: " + i.combustivel()));
         }
         catch (Exception e)
         {
@@ -123,6 +145,4 @@ public class Main
 
         return enderecoEjson;
     }
-
-
 }
